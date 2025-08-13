@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Code2Data Certificate Verification</title>
+  <meta name="description" content="Verify Code2Data training certificates by Certificate ID."/>
+  <style>
+    :root { --brand:#1d6fdc; --ink:#1f2937; --bg:#f7f9fc; --ok:#d4edda; --bad:#f8d7da; }
+    *{box-sizing:border-box}
+    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+         margin:0; background:var(--bg); color:var(--ink)}
+    header{padding:32px 16px; text-align:center; background:white; box-shadow:0 1px 8px rgba(0,0,0,.06)}
+    h1{margin:0 0 8px 0; font-size:28px; letter-spacing:.2px}
+    .sub{color:#4b5563; font-size:14px}
+    main{max-width:860px; margin:28px auto; padding:0 16px}
+    .card{background:white; border-radius:14px; padding:18px; box-shadow:0 4px 16px rgba(0,0,0,.07)}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center}
+    input[type=text]{flex:1 1 320px; padding:12px 14px; border:1px solid #d1d5db; border-radius:10px; font-size:16px}
+    button{padding:12px 18px; border:0; border-radius:10px; background:var(--brand); color:white; font-weight:600; cursor:pointer}
+    button:disabled{opacity:.6; cursor:not-allowed}
+    .result{margin-top:16px; padding:16px; border-radius:10px; font-size:16px}
+    .ok{background:var(--ok); color:#155724}
+    .bad{background:var(--bad); color:#721c24}
+    .muted{color:#6b7280; font-size:13px; margin-top:10px}
+    .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:10px}
+    .kv{background:#f3f4f6; border-radius:10px; padding:10px 12px; text-align:left}
+    .kv b{display:block; font-size:12px; color:#374151; margin-bottom:3px}
+    footer{max-width:860px; margin:16px auto 40px; padding:0 16px; color:#6b7280; font-size:12px; text-align:center}
+    .copy{background:#111827; color:#fff; border-radius:8px; padding:8px 10px; font-size:12px}
+    .links{margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Code2Data — Certificate Verification</h1>
+    <div class="sub">Verify a training certificate using its unique Certificate ID. Example: <code>C2D-2025-001</code></div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="row">
+        <input id="certId" type="text" placeholder="Enter Certificate ID (e.g., C2D-2025-001)" />
+        <button id="verifyBtn">Verify</button>
+        <button id="clearBtn" style="background:#6b7280">Clear</button>
+      </div>
+      <div id="result" class="result" style="display:none"></div>
+      <div class="links">
+        <button id="copyLinkBtn" class="copy" title="Copy direct link for this Certificate ID" style="display:none">Copy direct link</button>
+      </div>
+      <div class="muted">
+        Tip: You can also open <code>?id=C2D-2025-001</code> in the URL to auto-verify.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Issued by <b>Code2Data</b>, an unregistered private training provider. This certificate is for industry-oriented skill development and is not a government-recognized qualification.
+  </footer>
+
+  <script>
+    let DATA = [];
+    const $ = (q) => document.querySelector(q);
+    const resultDiv = $("#result");
+    const input = $("#certId");
+    const verifyBtn = $("#verifyBtn");
+    const clearBtn = $("#clearBtn");
+    const copyLinkBtn = $("#copyLinkBtn");
+
+    async function loadData(){
+      try{
+        const res = await fetch("certificates.json", { cache: "no-store" });
+        DATA = await res.json();
+      }catch(e){
+        showError("Could not load certificate database. Please try again later.");
+      }
+    }
+
+    function showError(msg){
+      resultDiv.style.display = "block";
+      resultDiv.className = "result bad";
+      resultDiv.innerHTML = "❌ " + msg;
+      copyLinkBtn.style.display = "none";
+    }
+
+    function showVerified(cert){
+      resultDiv.style.display = "block";
+      resultDiv.className = "result ok";
+      resultDiv.innerHTML = `
+        ✅ <strong>Certificate Verified</strong>
+        <div class="grid">
+          <div class="kv"><b>Certificate ID</b>${cert.id}</div>
+          <div class="kv"><b>Name</b>${cert.name}</div>
+          <div class="kv"><b>Course</b>${cert.course}</div>
+          <div class="kv"><b>Start Date</b>${cert.start}</div>
+          <div class="kv"><b>End Date</b>${cert.end}</div>
+          <div class="kv"><b>Status</b>${cert.status || "Verified"}</div>
+          ${cert.issued_on ? `<div class="kv"><b>Issued On</b>${cert.issued_on}</div>` : ""}
+          ${cert.remark ? `<div class="kv"><b>Remarks</b>${cert.remark}</div>` : ""}
+        </div>
+      `;
+      copyLinkBtn.style.display = "inline-block";
+      copyLinkBtn.onclick = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("id", cert.id);
+        navigator.clipboard.writeText(url.toString()).then(()=>{
+          copyLinkBtn.textContent = "Link copied!";
+          setTimeout(()=>copyLinkBtn.textContent="Copy direct link", 1400);
+        });
+      };
+    }
+
+    function showNotFound(id){
+      resultDiv.style.display = "block";
+      resultDiv.className = "result bad";
+      resultDiv.innerHTML = `❌ Certificate Not Found for ID: <b>${id}</b>`;
+      copyLinkBtn.style.display = "none";
+    }
+
+    function findCert(id){
+      if(!id) return null;
+      const target = id.trim().toLowerCase();
+      return DATA.find(c => (c.id || "").toLowerCase() === target) || null;
+    }
+
+    function verifyId(id){
+      if(!id){ showError("Please enter a Certificate ID."); return; }
+      const cert = findCert(id);
+      if(cert){ showVerified(cert); }
+      else{ showNotFound(id); }
+    }
+
+    verifyBtn.addEventListener("click", ()=> verifyId(input.value));
+    clearBtn.addEventListener("click", ()=>{
+      input.value = "";
+      resultDiv.style.display = "none";
+      copyLinkBtn.style.display = "none";
+      const url = new URL(window.location.href);
+      url.searchParams.delete("id");
+      history.replaceState({}, "", url.toString());
+      input.focus();
+    });
+
+    input.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){ verifyId(input.value); }
+    });
+
+    // Boot
+    loadData().then(()=>{
+      const params = new URLSearchParams(window.location.search);
+      const idParam = params.get("id");
+      if(idParam){
+        input.value = idParam;
+        verifyId(idParam);
+      }else{
+        input.focus();
+      }
+    });
+  </script>
+</body>
+</html>
