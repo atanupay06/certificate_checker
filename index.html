@@ -11,6 +11,8 @@
     body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
          margin:0; background:var(--bg); color:var(--ink)}
     header{padding:32px 16px; text-align:center; background:white; box-shadow:0 1px 8px rgba(0,0,0,.06)}
+    header .logo{max-width:180px; width:40%; height:auto; display:block; margin:0 auto 12px;}
+    @media (min-width:640px){ header .logo{width:160px;} }
     h1{margin:0 0 8px 0; font-size:28px; letter-spacing:.2px}
     .sub{color:#4b5563; font-size:14px}
     main{max-width:860px; margin:28px auto; padding:0 16px}
@@ -33,8 +35,10 @@
 </head>
 <body>
   <header>
+    <!-- Logo before heading -->
+    <img src="logo.png" alt="Code2Data Logo" class="logo">
     <h1>Code2Data — Certificate Verification</h1>
-    <div class="sub">Verify a training certificate using its unique Certificate ID. Example: <code>C2D-2025-001</code></div>
+    <div class="sub">Verify your certificate here using its unique Certificate ID. Example: <code>C2D-2025-001</code></div>
   </header>
 
   <main>
@@ -55,7 +59,7 @@
   </main>
 
   <footer>
-    Issued by <b>Code2Data</b>, an unregistered private training provider. This certificate is for industry-oriented skill development and is not a government-recognized qualification.
+    Issued by <b>Code2Data</b>, an private training provider. This certificate is for industry-oriented skill development and is not a government-recognized qualification.
   </footer>
 
   <script>
